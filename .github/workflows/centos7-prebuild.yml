@@ -1,0 +1,76 @@
+name: CentOS 7 Prebuild
+
+# Builds a linux-x64 binary compatible with CentOS 7 (glibc 2.17) and
+# packages it for offline installation on air-gapped machines.
+#
+# Why a separate workflow: the regular prebuilds are compiled against much
+# newer toolchains (Debian bookworm / glibc 2.28+) and cannot load on
+# CentOS 7. Here everything happens inside a manylinux2014 container, which
+# is itself based on CentOS 7 (glibc 2.17), and the build fails if the
+# binary ends up requiring anything newer.
+#
+# Trigger:
+#   - manual:  Actions tab -> "CentOS 7 Prebuild" -> Run workflow
+#   - release: push a tag starting with "centos7-" to attach the tarballs
+#              to a GitHub Release
+on:
+  workflow_dispatch:
+    inputs:
+      node_version:
+        description: 'Node.js version used for the build (unofficial glibc-217 variant, must exist on unofficial-builds.nodejs.org)'
+        default: '22.11.0'
+        type: string
+  push:
+    tags:
+      - 'centos7-*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build linux-x64 (glibc 2.17)
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: ${{ inputs.node_version || '22.11.0' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Node.js (glibc-217 unofficial build)
+        run: |
+          curl -fsSLo .node-dist.tar.gz \
+            "https://unofficial-builds.nodejs.org/download/release/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64-glibc-217.tar.gz"
+          ls -lh .node-dist.tar.gz
+
+      - name: Build in manylinux2014 (CentOS 7 base, glibc 2.17) container
+        run: |
+          docker run --rm \
+            -v "${PWD}:/src" -w /src \
+            -e NODE_DIST_TAR=/src/.node-dist.tar.gz \
+            quay.io/pypa/manylinux2014_x86_64 \
+            bash scripts/centos7/build-in-container.sh
+
+      - name: Package for offline install
+        run: |
+          PKG="node-pty-prebuilt-multiarch-centos7"
+          mkdir -p "dist/${PKG}"
+          cp -r package.json README.md LICENSE binding.gyp abi_registry.json \
+                lib typings scripts prebuilds "dist/${PKG}/"
+          cp scripts/centos7/OFFLINE-INSTALL.md "dist/${PKG}/"
+          tar -C dist -czf "${PKG}-linux-x64.tar.gz" "${PKG}"
+          tar -czf pty-prebuilds-linux-x64-only.tar.gz prebuilds
+          sha256sum ./*.tar.gz
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-pty-centos7-linux-x64
+          path: ./*.tar.gz
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Attach to GitHub Release (tag builds only)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./*.tar.gz
