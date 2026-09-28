@@ -9,6 +9,28 @@ Node 版本预置了多个 ABI 文件名（`node.abi93.node`、`node.abi115.node
 它们内容相同，只是文件名不同，目的是让运行时加载器
 （`lib/prebuild-file-path.ts` 编译产物）总能按当前 Node 的 ABI 找到文件。
 
+## 快速路径：内网已装 unofficial glibc-217 的 Node 22，只需替换二进制
+
+若内网机器已运行 unofficial glibc-217 构建的 Node 22（ABI = 127），
+且项目其余部分都已验证可用，则只需把编译产物放进**已安装的包目录**，
+完全不需要编译器，也不需要动项目的其它内容：
+
+```bash
+node -p process.versions.modules        # 应输出 127（Node 22）
+
+# 进入已安装的 @homebridge/node-pty-prebuilt-multiarch 包目录（package.json 所在处），
+# 即 <你的项目>/node_modules/@homebridge/node-pty-prebuilt-multiarch
+mkdir -p prebuilds/linux-x64
+cp /path/to/node.abi127.node prebuilds/linux-x64/
+
+# 防御性清理：加载器优先读 prebuilds/，其次才落到 build/Release/pty.node。
+# 若之前下载/编译过不兼容的旧二进制，删掉以免将来回退到坏文件。
+rm -f build/Release/pty.node
+```
+
+完成后按「三、验证」测试。如果 `process.versions.modules` 输出的不是 127，
+把 `node.abi127.node` 复制改名为 `node.abi<该数字>.node` 即可（N-API 二进制跨 ABI 通用）。
+
 ## 一、准备内网机器的 Node.js（关键前提）
 
 CentOS 7 的 glibc 是 2.17，而 Node 18 以后的官方构建要求 glibc >= 2.28，
@@ -63,7 +85,7 @@ CentOS 7 的 glibc 是 2.17，而 Node 18 以后的官方构建要求 glibc >= 2
 # 在包根目录下（package.json 所在目录）
 mkdir -p prebuilds/linux-x64 build/Release
 cp /path/to/prebuilds/linux-x64/*.node prebuilds/linux-x64/
-# build/Release 是加载器的兜底路径，也放一份最保险
+# build/Release 是加载器的兜底路径（优先级低于 prebuilds/），也放一份最保险
 cp /path/to/build/Release/pty.node build/Release/   # 若有单独的 pty.node
 # lib/ 若不存在（git 克隆的源码），把压缩包里的 lib/ 一并复制过来
 ```

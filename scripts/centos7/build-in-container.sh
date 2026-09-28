@@ -23,8 +23,16 @@ set -euxo pipefail
 
 NODE_DIST_TAR="${NODE_DIST_TAR:-/src/.node-dist.tar.gz}"
 
-# manylinux toolchain: devtoolset-10 for C++17, python 3.8 for node-gyp
-export PATH="/opt/rh/devtoolset-10/root/usr/bin:/opt/python/cp38-cp38/bin:${PATH}"
+# manylinux toolchain: devtoolset-10 (gcc 10, full C++17) for compiling, and
+# a CPython from the image for node-gyp. The exact /opt/python/cpXY versions
+# shipped change over time (EOL'ed CPythons get dropped from the image), so
+# discover the newest one instead of hardcoding a path.
+PYTHON_BIN_DIR=$(ls -d /opt/python/cp3*/bin 2>/dev/null | sort -V | tail -1 || true)
+if [ -z "${PYTHON_BIN_DIR}" ]; then
+  echo "ERROR: no CPython found under /opt/python" >&2
+  exit 1
+fi
+export PATH="/opt/rh/devtoolset-10/root/usr/bin:${PYTHON_BIN_DIR}:/usr/local/bin:${PATH}"
 
 gcc --version | head -1
 python3 --version
