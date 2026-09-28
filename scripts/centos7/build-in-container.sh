@@ -91,9 +91,10 @@ console.log('SMOKE TEST OK');
 EOF
 
 # Hard requirement check: referenced symbol versions must not exceed what
-# CentOS 7 provides (glibc 2.17 / libstdc++ GLIBCXX 3.4.19).
-MAX_GLIBC=$(objdump -T build/Release/pty.node | grep -oE 'GLIBC_[0-9.]+' | sort -uV | tail -1 || true)
-MAX_GLIBCXX=$(objdump -T build/Release/pty.node | grep -oE 'GLIBCXX_[0-9.]+' | sort -uV | tail -1 || true)
+# CentOS 7 provides (glibc 2.17 / libstdc++ GLIBCXX 3.4.19). Strip the
+# GLIBC_/GLIBCXX_ prefix before comparing, so sort -V sees plain versions.
+MAX_GLIBC=$(objdump -T build/Release/pty.node | grep -oE 'GLIBC_[0-9.]+' | sed 's/^GLIBC_//' | sort -uV | tail -1 || true)
+MAX_GLIBCXX=$(objdump -T build/Release/pty.node | grep -oE 'GLIBCXX_[0-9.]+' | sed 's/^GLIBCXX_//' | sort -uV | tail -1 || true)
 echo "max GLIBC = ${MAX_GLIBC:-<none>}   max GLIBCXX = ${MAX_GLIBCXX:-<none>}"
 [ -z "${MAX_GLIBC}" ]   || [ "$(printf '%s\n2.17\n'    "${MAX_GLIBC}"   | sort -uV | tail -1)" = "2.17" ]
 [ -z "${MAX_GLIBCXX}" ] || [ "$(printf '%s\n3.4.19\n' "${MAX_GLIBCXX}" | sort -uV | tail -1)" = "3.4.19" ]

@@ -5,7 +5,7 @@
 # what the GitHub Actions workflow runs):
 #
 #   bash scripts/centos7/build.sh
-#   NODE_VERSION=22.11.0 bash scripts/centos7/build.sh
+#   NODE_VERSION=22.23.0 bash scripts/centos7/build.sh
 #
 # Produces:
 #   build/Release/pty.node              compiled binary
@@ -14,7 +14,7 @@
 #
 set -euxo pipefail
 
-NODE_VERSION="${NODE_VERSION:-22.11.0}"
+NODE_VERSION="${NODE_VERSION:-22.23.0}"
 
 # Unofficial Node.js build linked against glibc 2.17 - the newest Node line
 # that still runs on CentOS 7 (official builds require glibc >= 2.28 since

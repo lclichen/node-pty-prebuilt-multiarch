@@ -39,11 +39,11 @@ CentOS 7 的 glibc 是 2.17，而 Node 18 以后的官方构建要求 glibc >= 2
 1. **推荐：Node.js 非官方 glibc-217 构建（支持 v18–v23，即 18/20/22 可用）**
    在外网下载后拷入内网安装：
    ```
-   https://unofficial-builds.nodejs.org/download/release/v22.11.0/node-v22.11.0-linux-x64-glibc-217.tar.gz
+   https://unofficial-builds.nodejs.org/download/release/v22.23.0/node-v22.23.0-linux-x64-glibc-217.tar.gz
    https://unofficial-builds.nodejs.org/download/release/v20.18.1/node-v20.18.1-linux-x64-glibc-217.tar.gz
    ```
    ```bash
-   tar -xzf node-v22.11.0-linux-x64-glibc-217.tar.gz -C /usr/local --strip-components=1
+   tar -xzf node-v22.23.0-linux-x64-glibc-217.tar.gz -C /usr/local --strip-components=1
    node -v   # 应正常输出版本号
    ```
 
@@ -127,6 +127,6 @@ console.log('pty ok, pid='+p.pid); p.kill();"
 ```bash
 git clone https://github.com/lclichen/node-pty-prebuilt-multiarch.git
 cd node-pty-prebuilt-multiarch
-bash scripts/centos7/build.sh          # 默认 Node 22.11.0
+bash scripts/centos7/build.sh          # 默认 Node 22.23.0
 NODE_VERSION=20.18.1 bash scripts/centos7/build.sh
 ```
